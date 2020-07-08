@@ -1,7 +1,7 @@
 """
-tittle : Practice for python with Tetris
-author : Jang Yun Jae
-last modified: 2020.07.02
+tittle : Practice for python(Pycharm) with Tetris
+author : Jang Yun Jae (mealsOrder)
+last modified: 2020.07.09
 
 
 """
@@ -53,7 +53,7 @@ class Board(wx.Panel):
         self.timer = wx.Timer(self, Board.ID_TIMER)  ## 타이머 설정
         self.isWaitingAfterLine = False
         self.curPiece = Shape()
-        self.nextPuece = Shape()
+        self.nextPiece = Shape()
         self.curX = 0
         self.curY = 0
         self.numLinesRemoved = 0
@@ -181,17 +181,188 @@ class Board(wx.Panel):
         else:
             event.Skip()
 
-        def OnTimer(self, event):
-            if event.Getld() == Board.ID_TIMER:
-                if self.isWaitingAfterLine:
-                    self.isWaitingAfterLine = False
-                    self.newPiece()
-                else:
-                    self.oneLineDown()
-
+    ## 타이머 함수
+    def OnTimer(self, event):
+        if event.Getld() == Board.ID_TIMER:
+            if self.isWaitingAfterLine:
+                self.isWaitingAfterLine = False
+                self.newPiece()
             else:
-                event.Skip()
+                self.oneLineDown()
 
+        else:
+            event.Skip()
+
+    ## 드롭다운 함수( 바로내리기 함수)
+    def dropDown(self):
+        newY = self.curY
+        while newY > 0:
+            if not self.tryMove(self.curPiece, self.curX, newY -1):
+                break
+            newY -= 1
+
+        self.pieceDropped()
+
+     ## 한줄씩만 내리기 함수
+    def onLineDown(self):
+        if not self.tryMove(self.curPiece, self.curX, self.curY -1):
+            self.pieceDropped()
+
+
+    def pieceDropped(self):
+        for i in range(4):
+            x = self.curX + self.curPiece.x(i)
+            y = self.curY + self.curPiece.y(i)
+            self.setShape(x,y,self.curPiece.shape())
+
+        self.removeFullLines()      ## 꽉찬 줄 지우기
+
+        if not self.isWaitingAfterLine:
+            self.newPiece()
+
+    ## 꽉찬 줄 지우기 함수
+    def removeFullLines(self):
+        numFullLines = 0            ## 꽉찬 줄 0으로 초기화
+        statusbar = self.Getparent().statusbar          ## 상태창을 부모의 상태창을 가져온다
+        rowsToRemove = []
+        for i in range(Board.BoardHeight):
+            n = 0
+            for j in range(Board.BoardWidth):
+                if not self.shapeAt(j,i) == Tetrominoes.NoShape:
+                    n = n + 1
+
+            if n == 10:
+                rowsToRemove.append(i)
+
+        rowsToRemove.reverse()
+
+        for m in rowsToRemove:
+            for k in range(m,Board.BoardHeight):
+                for l in range(Board.BoardWidth):
+                    self.setShapeAt(l, k, self.shapeAt(l, k + 1))
+            numFullLines = numFullLines + len(rowsToRemove)
+
+            if numFullLines > 0:
+                self.numLinesRemoved = self.numLinesRemoved + numFullLines
+                statusbar.SetStatusText(str(self.numLinesREmoved))
+                self.isWaitingAfterLine = True
+                self.curPiece.setShape(Tetrominoes.NoShape)
+                self.Refresh()
+
+    ## 새로운 조각 나오게 하는 함수
+    def newPiece(self):
+        self.curPiece = self.nextPiece
+        statusbar = self.GetParent().statusbar
+        self.nextPiece.setRandomShape()
+
+        self.curX = Board.BoardWidth // 2 + 1
+        self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
+
+        if not self.tryMove(self.curPiece, self.curX, self.curY):
+            self.curPiece.setShape(Tetrominoes.NoShape)
+            self.timer.Stop()
+            self.isStarted = False
+            statusbar.SetStatusText('Game over')
+
+    ## 블럭을 움직이게 하는 함수
+    def tryMove(self, newPiece, newX, newY):
+        for i in range(4):
+            x = newX + newPiece.x(i)
+            y = newY + newPiece.y(i)
+
+            if x < 0 or x >= Board.BoardWidth or y < 0 or y >= Board.BoardHeight:
+                return False
+
+            if self.shapeAt(x, y) != Tetrominoes.NoShape:
+                return False
+
+        self.curPiece = newPiece
+        self.curX = newX
+        self.curY = newY
+        self.Refresh()
+
+        return True
+
+    ## 블럭을 그리는 함수(블럭 색상, 밝기 정보 포함)
+    def drawSquare(self, dc, x, y, shape):
+
+        colors = ['#000000', '#CC6666', '#66CC66', '#6666CC',
+                  '#CCCC66', '#CC66CC', '#66CCCC', '#DAAA00']
+
+        light = ['#000000', '#F89FAB', '#79FC79', '#7979FC',
+                 '#FCFC79', '#FC79FC', '#79FCFC', '#FCC600']
+
+        dark = ['#000000', '#803C3B', '#3B803B', '#3B3B80',
+                 '#80803B', '#803B80', '#3B8080', '#806200']
+
+        pen = wx.Pen(light[shape])
+        pen.SetCap(wx.CAP_PROJECTING)
+        dc.SetPen(pen)
+
+        dc.DrawLine(x, y + self.squareHeight() - 1, x, y)
+        dc.DrawLine(x, y, x + self.squareWidth() - 1, y)
+
+        darkpen = wx.Pen(dark[shape])
+        darkpen.SetCap(wx.CAP_PROJECTING)
+        dc.SetPen(darkpen)
+
+        dc.DrawLine(x + 1, y + self.squareHeight() - 1,
+                    x + self.squareWidth() - 1, y + self.squareHeight() - 1)
+        dc.DrawLine(x + self.squareWidth() - 1,
+                    y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
+
+        dc.SetPen(wx.TRANSPARENT_PEN)
+        dc.SetBrush(wx.Brush(colors[shape]))
+        dc.DrawRectangle(x + 1, y + 1, self.squareWidth() - 2, self.squareHeight() - 2)
+
+## Tetrominoes 클래스 선언
+class Tetrominoes(object):
+    NoShape = 0
+    ZShape = 1
+    SShape = 2
+    LineShape = 3
+    TShape = 4
+    SquareShape = 5
+    LShape = 6
+    MirroredLShape = 7
+
+## Shape클래스 선언
+class Shape(object):
+
+    ## ?
+    coordsTable = (
+        ((0, 0),     (0, 0),     (0, 0),     (0, 0)),
+        ((0, -1),    (0, 0),     (-1, 0),    (-1, 1)),
+        ((0, -1),    (0, 0),     (1, 0),     (1, 1)),
+        ((0, -1),    (0, 0),     (0, 1),     (0, 2)),
+        ((-1, 0),    (0, 0),     (1, 0),     (0, 1)),
+        ((0, 0),     (1, 0),     (0, 1),     (1, 1)),
+        ((-1, -1),   (0, -1),    (0, 0),     (0, 1)),
+        ((1, -1),    (0, -1),    (0, 0),     (0, 1))
+    )
+
+    ## 생성자
+    def __init__(self):
+        self.coords = [[0,0] for i in range(4)]
+        self.pieceShape = Tetrominoes.NoShape
+
+        self.setShape(Tetrominoes.NoShape)
+
+    ## shape 함수
+    def shape(self):
+        return self.pieceShape
+
+    ## shape
+    def setShape(self, shape):
+        table = Shape.coordsTable[shape]
+        for i in range(4):
+            for j in range(2):
+                self.coords[i][j] = table[i][j]
+
+        self.pieceShape = shape
+
+    def setRandomShape(self):
+        self.setShape(random.randint(1,7))
 
 
 
