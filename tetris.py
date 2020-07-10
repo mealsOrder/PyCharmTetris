@@ -17,8 +17,9 @@ class Tetris(wx.Frame):
 
     ##생성자
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, size=(180, 380),  ## 창크기를 180x380으로 설정 및 각종 설정
+        wx.Frame.__init__(self, parent, size=(180, 380), ## 창크기를 180x380으로 설정 및 각종 설정
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^ wx.MAXIMIZE_BOX)
+
         self.initFrame()  ## 프레임 생성 매서드 실행
 
     ##프레임 초기화 및 생성 매서드
@@ -64,11 +65,13 @@ class Board(wx.Panel):
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)  ## 그림그리기 이벤트 묶기
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)  ## 키를 눌렀을때 이벤트
-        self.Bind(wx.EVT_TIMER, self.OnTimer, id=Board.ID_TIMER)  ## 타이머 묶기
+        self.Bind(wx.EVT_TIMER, self.OnTimer, id = Board.ID_TIMER)  ## 타이머 묶기
+
+        self.clearBoard()
 
     ## 모양의 좌표
     def shapeAt(self, x, y):
-        return self.board[(y * Board.BoardWidth) + x]  ## y좌표 x 보드의 너비 + x좌표
+        return self.board[(y * Board.BoardWidth) + x] ## y좌표 x 보드의 너비 + x좌표
 
     ## 모양설정 및 모양의 좌표 설정
     def setShapeAt(self, x, y, shape):
@@ -80,24 +83,30 @@ class Board(wx.Panel):
 
     ## 사각블럭 높이
     def squareHeight(self):
+
         return self.GetClientSize().GetHeight() // Board.BoardHeight
+
+
 
     ## 시작 함수
     def start(self):
-        if self.isPaused:  ## 만약 self.isPaused가 참이라면 반환값 없음  << ?? 맞는 표현인가?
+
+        if self.isPaused:
             return
 
         self.isStarted = True
         self.isWaitingAfterLine = False
-        self.numLinesRemoved = 0  ##
+        self.numLinesRemoved = 0
         self.clearBoard()
 
         self.newPiece()
         self.timer.Start(Board.Speed)
 
+
     ## 정지 함수
     def pause(self):
-        if not self.isPaused:  ## 만약 self.isPaused가 아니 라면 반환값 없음  << ?? 맞는 표현인가?
+
+        if not self.isStarted:
             return
 
         self.isPaused = not self.isPaused
@@ -116,6 +125,7 @@ class Board(wx.Panel):
     def clearBoard(self):
         for i in range(Board.BoardHeight * Board.BoardWidth):
             self.board.append(Tetrominoes.NoShape)
+
 
     ## 그림 그리는 함수
     def OnPaint(self, event):
@@ -146,30 +156,39 @@ class Board(wx.Panel):
                     boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
                     self.curPiece.shape())
 
+
     ## 키보드 눌렀을때 동작하는 함수
     def OnKeyDown(self, event):
+
         if not self.isStarted or self.curPiece.shape() == Tetrominoes.NoShape:
             event.Skip()
             return
+
         keycode = event.GetKeyCode()
 
-        if keycode == ord('P') or keycode == ord('p'):      ## P,p 를 눌렀을때
-            self.pause()                                    ## pause
+        if keycode == ord('P') or keycode == ord('p'):
+            self.pause()
             return
 
-        if self.isPaused:                                   ##
+        ## R or r 누르면 다시 시작
+        if keycode == ord('R') or keycode == ord('r'):
+            self.initBoard()
+            self.start()
             return
 
-        elif keycode == wx.WXK_LEFT:                                    ## Alt + 왼쪽 방향키 눌럴을때
-            self.tryMove(self.curPiece, self.curX - 1, self.curY)       ## x축으로 -1 만큼움직인다.
+        if self.isPaused:
+            return
 
-        elif keycode == wx.WXK_RIGHT:                                   ## Alt + 오른쪽 방향키 눌럴을때
-            self.tryMove(self.curPiece, self.curX + 1, self.curY)       ## x축으로 +1 만큼 움직인다.
+        elif keycode == wx.WXK_LEFT:
+            self.tryMove(self.curPiece, self.curX - 1, self.curY)
+
+        elif keycode == wx.WXK_RIGHT:
+            self.tryMove(self.curPiece, self.curX + 1, self.curY)
 
         elif keycode == wx.WXK_DOWN:
             self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
 
-        elif keycode == wx. WXK_UP:
+        elif keycode == wx.WXK_UP:
             self.tryMove(self.curPiece.rotatedLeft(), self.curX, self.curY)
 
         elif keycode == wx.WXK_SPACE:
@@ -181,12 +200,15 @@ class Board(wx.Panel):
         else:
             event.Skip()
 
+
+
     ## 타이머 함수
     def OnTimer(self, event):
-        if event.GetId == Board.ID_TIMER:
+        if event.GetId() == Board.ID_TIMER:
             if self.isWaitingAfterLine:
                 self.isWaitingAfterLine = False
                 self.newPiece()
+
             else:
                 self.oneLineDown()
 
@@ -196,8 +218,9 @@ class Board(wx.Panel):
     ## 드롭다운 함수( 바로내리기 함수)
     def dropDown(self):
         newY = self.curY
+
         while newY > 0:
-            if not self.tryMove(self.curPiece, self.curX, newY -1):
+            if not self.tryMove(self.curPiece, self.curX, newY - 1):
                 break
             newY -= 1
 
@@ -205,26 +228,33 @@ class Board(wx.Panel):
 
      ## 한줄씩만 내리기 함수
     def oneLineDown(self):
-        if not self.tryMove(self.curPiece, self.curX, self.curY -1):
+
+        if not self.tryMove(self.curPiece, self.curX, self.curY - 1):
             self.pieceDropped()
 
 
     def pieceDropped(self):
+
         for i in range(4):
+
             x = self.curX + self.curPiece.x(i)
-            y = self.curY + self.curPiece.y(i)
+            y = self.curY - self.curPiece.y(i)
             self.setShapeAt(x, y, self.curPiece.shape())
 
-        self.removeFullLines()      ## 꽉찬 줄 지우기
+        self.removeFullLines()                  ## 꽉찬 줄 지우기
 
         if not self.isWaitingAfterLine:
             self.newPiece()
 
     ## 꽉찬 줄 지우기 함수
     def removeFullLines(self):
-        numFullLines = 0            ## 꽉찬 줄 0으로 초기화
-        statusbar = self.GetParent().statusbar          ## 상태창을 부모의 상태창을 가져온다
+
+        numFullLines = 0
+
+        statusbar = self.GetParent().statusbar
+
         rowsToRemove = []
+
         for i in range(Board.BoardHeight):
             n = 0
             for j in range(Board.BoardWidth):
@@ -237,20 +267,24 @@ class Board(wx.Panel):
         rowsToRemove.reverse()
 
         for m in rowsToRemove:
-            for k in range(m,Board.BoardHeight):
+            for k in range(m, Board.BoardHeight):
                 for l in range(Board.BoardWidth):
-                    self.setShapeAt(l, k, self.shapeAt(l, k + 1))
+                        self.setShapeAt(l, k, self.shapeAt(l, k + 1))
+
             numFullLines = numFullLines + len(rowsToRemove)
 
             if numFullLines > 0:
+
                 self.numLinesRemoved = self.numLinesRemoved + numFullLines
-                statusbar.SetStatusText(str(self.numLinesREmoved))
+                statusbar.SetStatusText(str(self.numLinesRemoved))
                 self.isWaitingAfterLine = True
                 self.curPiece.setShape(Tetrominoes.NoShape)
                 self.Refresh()
 
+
     ## 새로운 조각 나오게 하는 함수
     def newPiece(self):
+
         self.curPiece = self.nextPiece
         statusbar = self.GetParent().statusbar
         self.nextPiece.setRandomShape()
@@ -259,16 +293,20 @@ class Board(wx.Panel):
         self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
 
         if not self.tryMove(self.curPiece, self.curX, self.curY):
+
             self.curPiece.setShape(Tetrominoes.NoShape)
             self.timer.Stop()
             self.isStarted = False
             statusbar.SetStatusText('Game over')
 
+
     ## 블럭을 움직이게 하는 함수
     def tryMove(self, newPiece, newX, newY):
+
         for i in range(4):
+
             x = newX + newPiece.x(i)
-            y = newY + newPiece.y(i)
+            y = newY - newPiece.y(i)
 
             if x < 0 or x >= Board.BoardWidth or y < 0 or y >= Board.BoardHeight:
                 return False
@@ -307,16 +345,21 @@ class Board(wx.Panel):
         dc.SetPen(darkpen)
 
         dc.DrawLine(x + 1, y + self.squareHeight() - 1,
-                    x + self.squareWidth() - 1, y + self.squareHeight() - 1)
+            x + self.squareWidth() - 1, y + self.squareHeight() - 1)
         dc.DrawLine(x + self.squareWidth() - 1,
-                    y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
+        y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
 
         dc.SetPen(wx.TRANSPARENT_PEN)
         dc.SetBrush(wx.Brush(colors[shape]))
-        dc.DrawRectangle(x + 1, y + 1, self.squareWidth() - 2, self.squareHeight() - 2)
+        dc.DrawRectangle(x + 1, y + 1, self.squareWidth() - 2,
+        self.squareHeight() - 2)
+
+
+
 
 ## Tetrominoes 클래스 선언
 class Tetrominoes(object):
+
     NoShape = 0
     ZShape = 1
     SShape = 2
@@ -326,10 +369,10 @@ class Tetrominoes(object):
     LShape = 6
     MirroredLShape = 7
 
+
 ## Shape클래스 선언
 class Shape(object):
 
-    ## ?
     coordsTable = (
         ((0, 0),     (0, 0),     (0, 0),     (0, 0)),
         ((0, -1),    (0, 0),     (-1, 0),    (-1, 1)),
@@ -340,6 +383,7 @@ class Shape(object):
         ((-1, -1),   (0, -1),    (0, 0),     (0, 1)),
         ((1, -1),    (0, -1),    (0, 0),     (0, 1))
     )
+
 
     ## 생성자
     def __init__(self):
@@ -354,6 +398,7 @@ class Shape(object):
 
     ## shape
     def setShape(self, shape):
+
         table = Shape.coordsTable[shape]
         for i in range(4):
             for j in range(2):
@@ -362,21 +407,29 @@ class Shape(object):
         self.pieceShape = shape
 
     def setRandomShape(self):
-        self.setShape(random.randint(1,7))
+
+        self.setShape(random.randint(1, 7))
+
+
 
     def x(self, index):
+
         return self.coords[index][0]
 
     def y(self, index):
+
         return self.coords[index][1]
 
     def setX(self, index, x):
+
         self.coords[index][0] = x
 
     def setY(self, index, y):
+
         self.coords[index][1] = y
 
     def minX(self):
+
         m = self.coords[0][0]
         for i in range(4):
             m = min(m, self.coords[i][0])
@@ -384,6 +437,7 @@ class Shape(object):
         return m
 
     def maxX(self):
+
         m = self.coords[0][0]
         for i in range(4):
             m = max(m, self.coords[i][0])
@@ -391,6 +445,7 @@ class Shape(object):
         return m
 
     def minY(self):
+
         m = self.coords[0][1]
         for i in range(4):
             m = min(m, self.coords[i][1])
@@ -398,7 +453,9 @@ class Shape(object):
         return m
 
     def maxY(self):
+
         m = self.coords[0][1]
+
         for i in range(4):
             m = max(m, self.coords[i][1])
 
@@ -431,7 +488,6 @@ class Shape(object):
         return result
 
 ## 메인 부분 ##
-
 def main():
     app = wx.App()
     ex = Tetris(None)
