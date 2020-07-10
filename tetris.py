@@ -1,7 +1,7 @@
 """
 tittle : Practice for python(Pycharm) with Tetris
 author : Jang Yun Jae (mealsOrder)
-last modified: 2020.07.09
+last modified: 2020.07.10
 
 
 """
@@ -148,7 +148,7 @@ class Board(wx.Panel):
 
     ## 키보드 눌렀을때 동작하는 함수
     def OnKeyDown(self, event):
-        if not self.inStarted or self.curPieve.shape() == Tetrominoes.NoShape:
+        if not self.isStarted or self.curPiece.shape() == Tetrominoes.NoShape:
             event.Skip()
             return
         keycode = event.GetKeyCode()
@@ -167,10 +167,10 @@ class Board(wx.Panel):
             self.tryMove(self.curPiece, self.curX + 1, self.curY)       ## x축으로 +1 만큼 움직인다.
 
         elif keycode == wx.WXK_DOWN:
-            self.tryMove(self.curPiece.rotateRight(), self.curX, self.curY)
+            self.tryMove(self.curPiece.rotatedRight(), self.curX, self.curY)
 
         elif keycode == wx. WXK_UP:
-            self.tryMove(self.curPiece.rotateLeft(), self.curX, self.curY)
+            self.tryMove(self.curPiece.rotatedLeft(), self.curX, self.curY)
 
         elif keycode == wx.WXK_SPACE:
             self.dropDown()
@@ -183,7 +183,7 @@ class Board(wx.Panel):
 
     ## 타이머 함수
     def OnTimer(self, event):
-        if event.Getld() == Board.ID_TIMER:
+        if event.GetId == Board.ID_TIMER:
             if self.isWaitingAfterLine:
                 self.isWaitingAfterLine = False
                 self.newPiece()
@@ -204,7 +204,7 @@ class Board(wx.Panel):
         self.pieceDropped()
 
      ## 한줄씩만 내리기 함수
-    def onLineDown(self):
+    def oneLineDown(self):
         if not self.tryMove(self.curPiece, self.curX, self.curY -1):
             self.pieceDropped()
 
@@ -213,7 +213,7 @@ class Board(wx.Panel):
         for i in range(4):
             x = self.curX + self.curPiece.x(i)
             y = self.curY + self.curPiece.y(i)
-            self.setShape(x,y,self.curPiece.shape())
+            self.setShapeAt(x, y, self.curPiece.shape())
 
         self.removeFullLines()      ## 꽉찬 줄 지우기
 
@@ -223,12 +223,12 @@ class Board(wx.Panel):
     ## 꽉찬 줄 지우기 함수
     def removeFullLines(self):
         numFullLines = 0            ## 꽉찬 줄 0으로 초기화
-        statusbar = self.Getparent().statusbar          ## 상태창을 부모의 상태창을 가져온다
+        statusbar = self.GetParent().statusbar          ## 상태창을 부모의 상태창을 가져온다
         rowsToRemove = []
         for i in range(Board.BoardHeight):
             n = 0
             for j in range(Board.BoardWidth):
-                if not self.shapeAt(j,i) == Tetrominoes.NoShape:
+                if not self.shapeAt(j, i) == Tetrominoes.NoShape:
                     n = n + 1
 
             if n == 10:
@@ -364,8 +364,71 @@ class Shape(object):
     def setRandomShape(self):
         self.setShape(random.randint(1,7))
 
+    def x(self, index):
+        return self.coords[index][0]
 
+    def y(self, index):
+        return self.coords[index][1]
 
+    def setX(self, index, x):
+        self.coords[index][0] = x
+
+    def setY(self, index, y):
+        self.coords[index][1] = y
+
+    def minX(self):
+        m = self.coords[0][0]
+        for i in range(4):
+            m = min(m, self.coords[i][0])
+
+        return m
+
+    def maxX(self):
+        m = self.coords[0][0]
+        for i in range(4):
+            m = max(m, self.coords[i][0])
+
+        return m
+
+    def minY(self):
+        m = self.coords[0][1]
+        for i in range(4):
+            m = min(m, self.coords[i][1])
+
+        return m
+
+    def maxY(self):
+        m = self.coords[0][1]
+        for i in range(4):
+            m = max(m, self.coords[i][1])
+
+        return m
+
+    def rotatedLeft(self):
+        if self.pieceShape == Tetrominoes.SquareShape:
+            return self
+
+        result = Shape()
+        result.pieceShape = self.pieceShape
+
+        for i in range(4):
+            result.setX(i, self.y(i))
+            result.setY(i, -self.x(i))
+
+        return result
+
+    def rotatedRight(self):
+        if self.pieceShape == Tetrominoes.SquareShape:
+            return self
+
+        result = Shape()
+        result.pieceShape = self.pieceShape
+
+        for i in range(4):
+            result.setX(i, -self.y(i))
+            result.setY(i, self.x(i))
+
+        return result
 
 ## 메인 부분 ##
 
